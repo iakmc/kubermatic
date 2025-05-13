@@ -539,6 +539,16 @@ type KubermaticProxyConfiguration struct {
 	NoProxy string `json:"noProxy,omitempty"`
 }
 
+// DefaultAppCatalogConfig defines the configuration for the default application catalog.
+type DefaultAppCatalogConfig struct {
+	// Enabled determines whether default app catalog is applied.
+	Enabled bool `json:"enabled"`
+
+	// LimitApps specifies a list of applications allowed to be installed.
+	// If empty and Enabled is true, all available AppDefs will be installed.
+	LimitApps []string `json:"limitApps,omitempty"`
+}
+
 // +kubebuilder:object:generate=true
 // +kubebuilder:object:root=true
 
