@@ -133,6 +133,9 @@ type KubermaticConfigurationSpec struct {
 	// MirrorImages is a list of container images that will be mirrored with the `kubermatic-installer  mirror-images` command.
 	// Each entry should be in the format "repository:tag".
 	MirrorImages []string `json:"mirrorImages,omitempty"`
+	// DefaultAppCatalog shows if the default application catalog (AppDefs) is enabled,
+	// and if enabled, which applications should be installed.
+	DefaultAppCatalog DefaultAppCatalogConfig `json:"defaultAppCatalog,omitempty"`
 }
 
 // KubermaticAuthConfiguration defines keys and URLs for Dex.
