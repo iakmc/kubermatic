@@ -126,10 +126,16 @@ func testUserCluster(ctx context.Context, t *testing.T, tLogger *zap.SugaredLogg
 		t.Fatalf("%v", err)
 	}
 
+	customLine := `
+customVar: {{- if eq (default "" (index .Cluster.Annotations "env")) "prod" }}custom1{{ else }}custom2{{ end }}`
+
 	application := appskubermaticv1.ApplicationInstallation{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      applicationInstallationName,
 			Namespace: applicationNamespace,
+			Annotations: map[string]string{
+				"custom-var": "{{ .Values.customVar }}", // This is just a raw string here
+			},
 		},
 		Spec: appskubermaticv1.ApplicationInstallationSpec{
 			Namespace: &appskubermaticv1.AppNamespaceSpec{
@@ -140,7 +146,7 @@ func testUserCluster(ctx context.Context, t *testing.T, tLogger *zap.SugaredLogg
 				Name:    applicationName,
 				Version: applicationVersion,
 			},
-			ValuesBlock: defaultValuesBlock,
+			ValuesBlock: defaultValuesBlock + customLine,
 		},
 	}
 
@@ -318,6 +324,17 @@ func checkApplicationInstallationConditions(ctx context.Context, log *zap.Sugare
 
 	log.Info("all conditions ready")
 
+	customVarVal, ok := applicationInstallation.Annotations["custom-var"]
+	if !ok {
+		return fmt.Errorf("annotation custom-var not found on ApplicationInstallation %s in namespace %s", applicationInstallationName, applicationNamespace)
+	}
+
+	log.Infof("ApplicationInstallation annotation custom-var = %q", customVarVal)
+
+	if customVarVal != "custom2" {
+		return fmt.Errorf("unexpected value for custom-var annotation: %s", customVarVal)
+	}
+
 	// Check if Helm release status is "deployed"
 	helmReleaseDeployed := applicationInstallation.Status.HelmRelease.Info.Status == "deployed"
 
@@ -344,7 +361,9 @@ func createUserCluster(
 	testJig.ClusterJig.
 		WithTestName("application-test").
 		WithKonnectivity(true).
-		WithAnnotations(map[string]string{}).
+		WithAnnotations(map[string]string{
+			"env": "dev",
+		}).
 		WithProxyMode("ebpf")
 
 	cleanup := func() {
